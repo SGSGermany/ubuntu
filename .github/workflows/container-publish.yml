@@ -60,6 +60,11 @@ jobs:
         run: |
           buildah unshare ./build.sh
 
+      # Workaround for https://github.com/redhat-actions/push-to-registry/issues/66
+      - name: Delete base image
+        run: |
+          podman rmi "$(. ./container.env ; echo "$BASE_IMAGE")"
+
       - name: Container image metadata
         run: |
           podman image inspect "localhost/$IMAGE:${TAGS%% *}"
