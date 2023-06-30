@@ -20,6 +20,7 @@ export LC_ALL=C.UTF-8
     || { echo "Invalid build environment: Environment variable 'CI_TOOLS_PATH' not set or invalid" >&2; exit 1; }
 
 source "$CI_TOOLS_PATH/helper/common.sh.inc"
+source "$CI_TOOLS_PATH/helper/common-traps.sh.inc"
 source "$CI_TOOLS_PATH/helper/chkupd.sh.inc"
 
 BUILD_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -41,6 +42,8 @@ if [ -z "$CONTAINER" ]; then
     echo "build"
     exit
 fi
+
+trap_exit buildah rm "$CONTAINER"
 
 # run `apt-get update` and `apt list --upgradable` to check for package updates
 cmd buildah run "$CONTAINER" -- \
