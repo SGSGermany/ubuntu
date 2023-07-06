@@ -70,5 +70,6 @@ if [ "$CODENAME" == "$LATEST" ]; then
     TAGS+=( "latest" )
 fi
 
+printf 'MILESTONE="%s"\n' "$VERSION"
 printf 'VERSION="%s"\n' "$VERSION"
 printf 'TAGS="%s"\n' "${TAGS[*]}"
