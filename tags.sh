@@ -19,6 +19,12 @@ export LC_ALL=C.UTF-8
 [ -v CI_TOOLS_PATH ] && [ -d "$CI_TOOLS_PATH" ] \
     || { echo "Invalid build environment: Environment variable 'CI_TOOLS_PATH' not set or invalid" >&2; exit 1; }
 
+[ -x "$(type -P podman 2>/dev/null)" ] \
+    || { echo "Missing script dependency: podman" >&2; exit 1; }
+
+[ -x "$(type -P skopeo 2>/dev/null)" ] \
+    || { echo "Missing script dependency: skopeo" >&2; exit 1; }
+
 source "$CI_TOOLS_PATH/helper/common.sh.inc"
 
 BUILD_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -58,6 +64,18 @@ if [ -z "$CODENAME" ]; then
     exit 1
 fi
 
+# read version of latest Ubuntu image
+LATEST=""
+if [ "${BASE_IMAGE##*:}" != "latest" ]; then
+    echo + "LATEST=\"\$(skopeo inspect --format '{{ index .Labels \"org.opencontainers.image.version\" }}' $(quote "docker://${BASE_IMAGE%:*}:latest"))\"" >&2
+    LATEST="$(skopeo inspect --format '{{ index .Labels "org.opencontainers.image.version" }}' "docker://${BASE_IMAGE%:*}:latest")"
+
+    if [ -z "$LATEST" ]; then
+        echo "Unable to read 'org.opencontainers.image.version' label of container image 'docker://${BASE_IMAGE%:*}:latest'" >&2
+        exit 1
+    fi
+fi
+
 # build tags
 BUILD_INFO="$(date --utc +'%Y%m%d')$BUILD_INFO"
 
@@ -66,7 +84,7 @@ TAGS=(
     "$CODENAME" "$CODENAME-$BUILD_INFO"
 )
 
-if [ "$CODENAME" == "$LATEST" ]; then
+if [ -z "$LATEST" ] || [ "$VERSION" == "$LATEST" ]; then
     TAGS+=( "latest" )
 fi
 

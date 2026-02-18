@@ -3,7 +3,12 @@ name: Build & publish container
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Ubuntu version branch
+        required: false
+        type: string
 
 concurrency: build
 
@@ -15,23 +20,62 @@ defaults:
     shell: bash -eu -o pipefail {0}
 
 jobs:
+  generate-jobs:
+    name: Generate jobs
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    outputs:
+      BUILD_MATRIX: ${{ steps.generate-jobs.outputs.BUILD_MATRIX }}
+
+    steps:
+      - name: Setup CI tools
+        run: |
+          . <(curl -fsS -L "$CI_TOOLS_SETUP" | bash -s ~/ci-tools)
+          echo "CI_TOOLS=$CI_TOOLS" | tee -a "$GITHUB_ENV"
+          echo "CI_TOOLS_PATH=$CI_TOOLS_PATH" | tee -a "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate jobs
+        id: generate-jobs
+        env:
+          MILESTONES: ${{ inputs.branch }}
+        run: |
+          [ -n "$MILESTONES" ] || { MILESTONES="$(./branches.sh)" || EXIT_CODE=$?; }
+          
+          echo ::group::Jobs list
+          echo "$MILESTONES"
+          echo ::endgroup::
+          
+          echo "BUILD_MATRIX=$([ -z "$MILESTONES" ] || jq -Rcn '{"MILESTONE": [inputs]}' <<< "$MILESTONES")" >> $GITHUB_OUTPUT
+          exit ${EXIT_CODE:-0}
+
   build:
+    name: Build & publish container
+
+    needs: generate-jobs
+    if: ${{ always() && needs.generate-jobs.outputs.BUILD_MATRIX }}
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
+    concurrency: build-${{ matrix.MILESTONE }}
+
     strategy:
-      matrix:
-        BASE_IMAGE:
-          - docker.io/ubuntu:jammy
-          - docker.io/ubuntu:focal
+      matrix: ${{ fromJSON(needs.generate-jobs.outputs.BUILD_MATRIX) }}
+      fail-fast: false
 
     env:
       REGISTRY: ghcr.io
       OWNER: sgsgermany
       IMAGE: ubuntu
-      BASE_IMAGE: ${{ matrix.BASE_IMAGE }}
+      MILESTONE: ${{ matrix.MILESTONE }}
 
     steps:
       - name: Setup CI tools
