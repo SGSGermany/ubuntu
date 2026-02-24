@@ -96,7 +96,7 @@ jobs:
 
       - name: Check end of life
         run: |
-          "$CI_TOOLS_PATH/containers/check-end-of-life.sh" --filter '.isEol' '.eolFrom' "Ubuntu" "$MILESTONE"
+          "$CI_TOOLS_PATH/containers/check-end-of-life.sh" "Ubuntu" "$MILESTONE"
 
       - name: Check for updates
         run: |
