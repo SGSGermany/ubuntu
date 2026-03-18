@@ -50,7 +50,6 @@ cmd buildah config \
     --annotation org.opencontainers.image.url="https://github.com/SGSGermany/ubuntu" \
     --annotation org.opencontainers.image.authors="SGS Serious Gaming & Simulations GmbH" \
     --annotation org.opencontainers.image.vendor="SGS Serious Gaming & Simulations GmbH" \
-    --annotation org.opencontainers.image.licenses="MIT" \
     --annotation org.opencontainers.image.base.name="$BASE_IMAGE" \
     --annotation org.opencontainers.image.base.digest="$(podman image inspect --format '{{.Digest}}' "$BASE_IMAGE")" \
     "$CONTAINER"
