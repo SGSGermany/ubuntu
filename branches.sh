@@ -22,9 +22,6 @@ export LC_ALL=C.UTF-8
 [ -x "$(type -P skopeo 2>/dev/null)" ] \
     || { echo "Missing script dependency: skopeo" >&2; exit 1; }
 
-[ -x "$(type -P jq 2>/dev/null)" ] \
-    || { echo "Missing script dependency: jq" >&2; exit 1; }
-
 source "$CI_TOOLS_PATH/helper/common.sh.inc"
 
 BUILD_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
